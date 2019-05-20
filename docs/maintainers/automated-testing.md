@@ -43,3 +43,4 @@ documentation TODO:
 + Add links to the azure devops pipeline
 + explain lack of feature testing
 + mention the cache results are added to each run and the side effects of this
++ how to resolve failures due to dependancies external to vcpkg
