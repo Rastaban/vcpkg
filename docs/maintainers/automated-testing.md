@@ -1,54 +1,65 @@
 # Automated testing
 
-## PR tests
+## PR test steps
 
 Automated PR tests have the following steps:
-(*Although each of these steps don't necisarily map to a single job/task in AzureDevops*)
+(*Although each of these steps don't necessarily map to a single job/task in Azure DevOps*)
 
 ### 1. **Merge to latest baseline**
 
-Each PR is merged to the latest commit from master that has completed the post-checkin CI tests.
+Each PR is merged to the latest commit from master that has completed the post-merge CI tests.
 This is done so the results of the CI tests can be used as a baseline of what ports are expected to build.
 If the PR has merge conflicts with the baseline then the test will fail.
 Although uncommon, it is possible for your PR test to have failures you are unable to reproduce locally if it is not compatible with other more recent commits to master.
 
 ### 2. **Build vcpkg**
 
-Runs the appropriate bootstrap-vcpkg script for the achitecure.  Fails if vcpkg tools do not build.
+Runs the appropriate bootstrap-vcpkg script for the architecture.  Fails if vcpkg tools do not build.
 
 ### 3. **Calculate which ports are affected by the changes**
 
-`vcpkg ci` creates the list of ports that need testing by calculating the abi tag for each port and checking if the tag is in the current set of cached build results.  The cached build results include both passed and failed builds from **all** CI tests. If the abi tag is missing from the cache it is added to the build plan (unless it is on the "skip" list or has a dependancy that is either skipped or known to fail).
+`vcpkg ci` creates the list of ports that need testing by calculating the abi tag for each port and checking if the tag is in the current set of cached build results.  The cached build results include both passed and failed builds from **all** CI tests. If the abi tag is missing from the cache it is added to the build plan (unless it is on the "skip" list or has a dependency that is either skipped or known to fail).  If the abi tag is found in the cache then its pass/fail status is added to the results list without adding it to the build plan.
 
 The abi tag for a port is the combined hash of the following:
   + The hash of all files under the ports/_portname_ directory
   + The hash of the current triplet
-  + the api tag of all port dependancies from the CONTROL file
+  + the api tag of all port dependencies from the CONTROL file
 
 Any changes that affect the abi tag hash of a port should cause a rebuild of that port, along with all ports that depend on it.  Changes to other files (such as from the `scripts/cmake`) directory that have the potential to affect the build results are not currently part of the abi tag, so changes to those files need to have a manually queued full-rebuild test run.
 
 
-### 4. **Build all ports affected by the changes**
+### 4. **Calculated build plan is executed (ports are built)**
 
-All ports on the build plan are installed.  If a dependency of a port is in the cached build results then it is uncompressed and installed without building.  The results of each successfull port build is cached with all files the port installs.  , failed port builds h
+All ports on the build plan are installed.  If a dependency of a port is in the cached build results then it is uncompressed and installed without building.  The results of each successful port build is cached with all files the port installs.  The result of each failed build is given a tombstone in the build results archive that contains the logs.
 
 
 ### 5. **Analyze port build results against baseline expectations**
 
-And upload relevent logs (even if the failure did not happen in this build)
+The results of the port build phase are compared with the results from the previous steps.  Only port build failures that are not also in the baseline are considered a regression and fail the build.  The logs for all failing ports are collected from the archived tombstones and attached to the Azure DevOps pipeline.  
+
+Because the results comparison also uses the known results from step 3 the failure logs from previous iterations of the PR tests will continue to be attached to the pipeline even if the port was not actually built in the current run if the abi tag did not change.  To force a rebuild of the port in later pipeline runs, ask a member of the vcpkg team to remove the tombstone or make a change to one of the files in the port.
+
+## Links to Azure DevOps pipelines
+
+### PR pipelines
+
++ [vcpkg-linux-PR](https://dev.azure.com/vcpkg/public/_build?definitionId=8)
++ [vcpkg-windows-PR](https://dev.azure.com/vcpkg/public/_build?definitionId=10)
++ [vcpkg-osx-PR](https://dev.azure.com/vcpkg/public/_build?definitionId=12)
+
+### Post merge pipelines
+
++ [vcpkg-linux-master-CI](https://dev.azure.com/vcpkg/public/_build?definitionId=6)
++ [vcpkg-windows-master-CI](https://dev.azure.com/vcpkg/public/_build?definitionId=9)
++ [vcpkg-osx-master-CI](https://dev.azure.com/vcpkg/public/_build?definitionId=11)
 
 -------------------------------------------
 documentation TODO:
-+ PR test step details
 + what ports are disabled/skipped
 + what causes flaky ports
 + how to investigate failures
-+ How the baseline works
-+ interaction with Vcpkg-PR-Eager
 + future roadmap
-+ CI (post checkin) test documentation
 + tips on investigating failures
-+ Add links to the azure devops pipeline
 + explain lack of feature testing
 + mention the cache results are added to each run and the side effects of this
-+ how to resolve failures due to dependancies external to vcpkg
++ how to resolve failures due to dependencies external to vcpkg
