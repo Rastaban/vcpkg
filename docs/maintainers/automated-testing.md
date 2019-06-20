@@ -3,26 +3,34 @@
 ## PR tests
 
 Automated PR tests have the following steps:
+(*Although each of these steps don't necisarily map to a single job/task in AzureDevops*)
 
 ### 1. **Merge to latest baseline**
 
-Each PR is merged to the latest commit from master that has completed the post-checkin CI tests.  This is done so the results of the CI tests can be used as a baseline of what ports are expected to build.  If the PR has merge conflicts with the baseline then the test will fail. Although uncommon, it is possible for your PR test to have failures you are unable to reproduce locally if it is not compatible with other more recent changes to master.
+Each PR is merged to the latest commit from master that has completed the post-checkin CI tests.
+This is done so the results of the CI tests can be used as a baseline of what ports are expected to build.
+If the PR has merge conflicts with the baseline then the test will fail.
+Although uncommon, it is possible for your PR test to have failures you are unable to reproduce locally if it is not compatible with other more recent commits to master.
 
 ### 2. **Build vcpkg**
 
-Runs the appropriate bootstrap-vcpkg script.
+Runs the appropriate bootstrap-vcpkg script for the achitecure.  Fails if vcpkg tools do not build.
 
 ### 3. **Calculate which ports are affected by the changes**
 
-`vcpkg ci` creates the list of ports that need testing by calculating the abi tag for each port and comparing the tag with the current set of cached build results.  The cached build results include both passed and failed results builds from all CI tests. If the abi tag is missing from the cache it is added to the build list (unless it is on the "skip" list or has a dependancy that is either skipped or known to fail)
+`vcpkg ci` creates the list of ports that need testing by calculating the abi tag for each port and checking if the tag is in the current set of cached build results.  The cached build results include both passed and failed builds from **all** CI tests. If the abi tag is missing from the cache it is added to the build plan (unless it is on the "skip" list or has a dependancy that is either skipped or known to fail).
 
-The abi tag is the combined hash of the following:
+The abi tag for a port is the combined hash of the following:
   + The hash of all files under the ports/_portname_ directory
   + The hash of the current triplet
   + the api tag of all port dependancies from the CONTROL file
 
+Any changes that affect the abi tag hash of a port should cause a rebuild of that port, along with all ports that depend on it.  Changes to other files (such as from the `scripts/cmake`) directory that have the potential to affect the build results are not currently part of the abi tag, so changes to those files need to have a manually queued full-rebuild test run.
+
+
 ### 4. **Build all ports affected by the changes**
 
+All ports on the build plan are installed.  If a dependency of a port is in the cached build results then it is uncompressed and installed without building.  The results of each successfull port build is cached with all files the port installs.  , failed port builds h
 
 
 ### 5. **Analyze port build results against baseline expectations**
