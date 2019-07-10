@@ -8,7 +8,6 @@ Automated PR tests have the following steps:
 ### 1. **Merge to latest baseline**
 
 Each PR is merged to the latest commit from master that has completed the post-merge CI tests.
-This is done so the results of the CI tests can be used as a baseline of what ports are expected to build.
 If the PR has merge conflicts with the baseline then the test will fail.
 Although uncommon, it is possible for your PR test to have failures you are unable to reproduce locally if it is not compatible with other more recent commits to master.
 
@@ -16,9 +15,9 @@ Although uncommon, it is possible for your PR test to have failures you are unab
 
 Runs the appropriate bootstrap-vcpkg script for the architecture.  Fails if vcpkg tools do not build.
 
-### 3. **Calculate which ports are affected by the changes**
+### 3. **Calculate which ports are affected by the PR changes**
 
-`vcpkg ci` creates the list of ports that need testing by calculating the abi tag for each port and checking if the tag is in the current set of cached build results.  The cached build results include both passed and failed builds from **all** CI tests. If the abi tag is missing from the cache it is added to the build plan (unless it is on the "skip" list or has a dependency that is either skipped or known to fail).  If the abi tag is found in the cache then its pass/fail status is added to the results list without adding it to the build plan.
+`vcpkg ci` creates a list of ports that need to be built by calculating the abi tag for each port and checking if the tag is not in the current set of cached build results.  The cached build results include both passed and failed builds from **all** CI tests. If the abi tag is missing from the cache it is added to the build plan (unless it is on the "skip" list or has a dependency that is either skipped or known to fail).  If the abi tag is found in the cache then its pass/fail status is added to the results list without adding it to the build plan.
 
 The abi tag for a port is the combined hash of the following:
   + The hash of all files under the ports/_portname_ directory
