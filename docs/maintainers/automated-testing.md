@@ -36,7 +36,16 @@ All ports on the build plan are installed.  If a dependency of a port is in the 
 
 The results of the port build phase are compared with the results from the previous steps.  Only port build failures that are not also in the baseline are considered a regression and fail the build.  The logs for all failing ports are collected from the archived tombstones and attached to the Azure DevOps pipeline.  
 
-Because the results comparison also uses the known results from step 3 the failure logs from previous iterations of the PR tests will continue to be attached to the pipeline even if the port was not actually built in the current run if the abi tag did not change.  To force a rebuild of the port in later pipeline runs, ask a member of the vcpkg team to remove the tombstone or make a change to one of the files in the port.
+Because the results comparison also uses the known results from step 3 the failure logs from previous iterations of the PR tests will continue to be attached to the pipeline even if the port was not actually built in the current run.  (It won't be built if the abi tag did not change).  To force a rebuild of the port in later pipeline runs, ask a member of the vcpkg team to remove the tombstone or make a change to one of the files in the port.
+
+## Skipped ports
+
+The automated test system has a list of ports that are not tested.  Ports are added to the exclusion list under the following circumstances:
+
++ The port build will nondeterministicly fail
++ The port publishes files that conflict with another port
+
+In the case of conflicting ports we take into account popularity, number of dependants, and the chance of regression in the selection of which one is added to the skip list.
 
 ## Links to Azure DevOps pipelines
 
@@ -56,9 +65,5 @@ Because the results comparison also uses the known results from step 3 the failu
 documentation TODO:
 + what ports are disabled/skipped
 + what causes flaky ports
-+ how to investigate failures
-+ future roadmap
-+ tips on investigating failures
 + explain lack of feature testing
-+ mention the cache results are added to each run and the side effects of this
 + how to resolve failures due to dependencies external to vcpkg
