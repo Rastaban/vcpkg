@@ -87,9 +87,11 @@ The actual skip list used can be found in the pipline definition.  Here is a lis
   + conflicts with `libpng`
 + `libmariadb`
   + conflicts with `mysql`
++ `ogdf` (windows)
+  + conflicts with `coinutils`
   
 TODO:
-theia,shogun,winpcap,ogdf (windows)
+theia,shogun,winpcap (windows)
 ecm
 libp7-baical
 luajit
