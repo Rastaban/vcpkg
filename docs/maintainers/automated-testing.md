@@ -50,14 +50,50 @@ Missing dependances external to vcpkg can cause failures.  We encourage adding d
 
 ## Skipped ports
 
-The automated test system has a list of ports that are not tested.  We try to keep this list to a minimum because it requires additional work to test.  Ports are added to the exclusion list under the following circumstances:
+The automated test system has a list of ports that are not tested.  We try to keep this list to a minimum because it requires additional work to test.  Ports are added to the exclusion list if they are considered "flaky" due to one of the following conditions:
 
 + The port build will nondeterministicly fail
 + The port conflicts with other ports
   + Publishes files with the same name as other ports
   + Accidently uses files from another port if installed
 
-In the case of conflicting ports we take into account popularity, number of dependants, and the chance of regression in the selection of which one is added to the skip list.
+In the case of conflicting ports we take into account popularity, number of dependants, and the chance of regression in the selection of which one is added to the skip list
+
+Ports are not added to the list if they consistently fail to build (even if the failure is "by design")
+
+The actual skip list used can be found in the pipline definition.  Here is a list of the current ports and rational:
++ `ms-angle`
+  + Conflicts with `angle` and `qt-5base`
++ `angle` (windows)
+  + Conflicts with `qt5-base` and `ms-angle`
++ `tmx` (windows)
+  + Flaky on windows only due to `error PRI210: 0x80070020 - File move failed`
++ `gherkin-c` (windows)
+  + Conflicts with `libevent`
++ `libuuid` (osx)
+  + Causes build failures in `vxl` and `podofo`
+  + Conflicts with Darwin kernel sdk uuid.h (has missing definitions)
++ `vxl` (windows)
+  + Conflicts with latest `openjpeg` port (they ship with an old version of `openjpeg`)
++ `libressl`
+  + Conflicts with `openssl`
++ `optional-bare`
+  + conflicts with `optional-lite`
++ `range-v3-vs2015`
+  + conflicts with `range-v3`
++ `catch-classic`
+  + conflicts with `catch2`
++ `libpng-apng`
+  + conflicts with `libpng`
++ `libmariadb`
+  + conflicts with `mysql`
+  
+TODO:
+theia,shogun,winpcap,ogdf (windows)
+ecm
+libp7-baical
+luajit
+mozjpeg
 
 ## Links to Azure DevOps pipelines
 
