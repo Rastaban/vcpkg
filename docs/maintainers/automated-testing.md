@@ -38,12 +38,24 @@ The results of the port build phase are compared with the results from the previ
 
 Because the results comparison also uses the known results from step 3 the failure logs from previous iterations of the PR tests will continue to be attached to the pipeline even if the port was not actually built in the current run.  (It won't be built if the abi tag did not change).  To force a rebuild of the port in later pipeline runs, ask a member of the vcpkg team to remove the tombstone or make a change to one of the files in the port.
 
+### Limitations of the CI system
+
+There are a few limitations of the CI system that require additional testing to PRs.
+
+The CI system installs only the default features of a Port (unless another port has an explicit dependency on non-default features).
+
+There are a few ports thare are disabled in the CI test, changes to these ports require manual testing.  See **Skipped ports** section for more information.
+
+Missing dependances external to vcpkg can cause failures.  We encourage adding dependences as additional ports in vcpkg when it makes sense, but sometimes this is not resonable.  If you need an additional third party package installed let us know and we may be willing to add it to the CI VM setup, especially if it is available via apt on Unbuntu or homebrew on Mac.
+
 ## Skipped ports
 
-The automated test system has a list of ports that are not tested.  Ports are added to the exclusion list under the following circumstances:
+The automated test system has a list of ports that are not tested.  We try to keep this list to a minimum because it requires additional work to test.  Ports are added to the exclusion list under the following circumstances:
 
 + The port build will nondeterministicly fail
-+ The port publishes files that conflict with another port
++ The port conflicts with other ports
+  + Publishes files with the same name as other ports
+  + Accidently uses files from another port if installed
 
 In the case of conflicting ports we take into account popularity, number of dependants, and the chance of regression in the selection of which one is added to the skip list.
 
@@ -64,6 +76,4 @@ In the case of conflicting ports we take into account popularity, number of depe
 -------------------------------------------
 documentation TODO:
 + what ports are disabled/skipped
-+ what causes flaky ports
-+ explain lack of feature testing
-+ how to resolve failures due to dependencies external to vcpkg
+
