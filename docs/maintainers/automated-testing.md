@@ -73,8 +73,9 @@ The actual skip list used can be found in the pipline definition.  Here is a lis
 + `libuuid` (osx)
   + Causes build failures in `vxl` and `podofo`
   + Conflicts with Darwin kernel sdk uuid.h (has missing definitions)
-+ `vxl` (windows)
++ `vxl` (windows,linux)
   + Conflicts with latest `openjpeg` port (they ship with an old version of `openjpeg`)
+  + conflicts with qt5-location
 + `libressl`
   + Conflicts with `openssl`
 + `optional-bare`
