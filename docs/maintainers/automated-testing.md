@@ -90,6 +90,8 @@ The actual skip list used can be found in the pipline definition.  Here is a lis
   + conflicts with `mysql`
 + `ogdf` (windows)
   + conflicts with `coinutils`
++ 'gdcm' (linux)
+  + conflicts with 3rdparty copy in 'itk'
   
 TODO:
 theia,shogun,winpcap (windows)
