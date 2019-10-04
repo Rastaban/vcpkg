@@ -7,7 +7,7 @@ Automated PR tests have the following steps:
 
 ### 1. **Merge to latest baseline**
 
-Each PR is merged to the latest commit from master that has completed the post-merge CI tests.
+Each PR is merged to the latest commit from master.
 If the PR has merge conflicts with the baseline then the test will fail.
 Although uncommon, it is possible for your PR test to have failures you are unable to reproduce locally if it is not compatible with other more recent commits to master.
 
@@ -17,7 +17,7 @@ Runs the appropriate bootstrap-vcpkg script for the architecture.  Fails if vcpk
 
 ### 3. **Calculate which ports are affected by the PR changes**
 
-`vcpkg ci` creates a list of ports that need to be built by calculating the abi tag for each port and checking if the tag is not in the current set of cached build results.  The cached build results include both passed and failed builds from **all** CI tests. If the abi tag is missing from the cache it is added to the build plan (unless it is on the "skip" list or has a dependency that is either skipped or known to fail).  If the abi tag is found in the cache then its pass/fail status is added to the results list without adding it to the build plan.
+`vcpkg ci` creates a list of ports that need to be built by calculating the abi tag for each port and checking if the tag is not in the current set of cached build results.  The cached build results include both passing and failing builds from **all** CI pipelines. If the abi tag is missing from the cache it is added to the build plan (unless it is on the "skip" list or has a dependency that is either skipped or known to fail).  If the abi tag is found in the cache then its pass/fail status is added to the results list without adding it to the build plan.
 
 The abi tag for a port is the combined hash of the following:
   + The hash of all files under the ports/_portname_ directory
@@ -34,9 +34,9 @@ All ports on the build plan are installed.  If a dependency of a port is in the 
 
 ### 5. **Analyze port build results against baseline expectations**
 
-The results of the port build phase are compared with the results from the previous steps.  Only port build failures that are not also in the baseline are considered a regression and fail the build.  The logs for all failing ports are collected from the archived tombstones and attached to the Azure DevOps pipeline.  
+The results of the port build phase are compared with the expected results from the ci.baseline.txt file.  Any differences from the baseline cause the pipeline to fail.  The logs for all failing ports are collected from the archived tombstones and attached to the Azure DevOps pipeline.  If there was no abi change from previous runs then the failure logs from the last actual build attempt will be attached.  To force a rebuild of the port in later pipeline runs, ask a member of the vcpkg team to remove the tombstone or make a change to one of the files in the port.
 
-Because the results comparison also uses the known results from step 3 the failure logs from previous iterations of the PR tests will continue to be attached to the pipeline even if the port was not actually built in the current run.  (It won't be built if the abi tag did not change).  To force a rebuild of the port in later pipeline runs, ask a member of the vcpkg team to remove the tombstone or make a change to one of the files in the port.
+If the pipeline is failing because of a fix to a port build then the failure line must be removed from the baseline file.  Flaky ports can be marked as 'skip' to avoid building or 'ignore' to build in the system but ignore the results.  In general ports that cause conflicts with other ports should be skpped and ports that are flaky for other reasons should be ignored until their issue can be addressed.
 
 ### Limitations of the CI system
 
@@ -44,77 +44,12 @@ There are a few limitations of the CI system that require additional testing to 
 
 The CI system installs only the default features of a Port (unless another port has an explicit dependency on non-default features).
 
-There are a few ports thare are disabled in the CI test, changes to these ports require manual testing.  See **Skipped ports** section for more information.
+Some ports are disabled in the CI tests (see the 'skip' tag from `ci.baseine.txt`, changes to these ports require manual testing.
 
 Missing dependances external to vcpkg can cause failures.  We encourage adding dependences as additional ports in vcpkg when it makes sense, but sometimes this is not resonable.  If you need an additional third party package installed let us know and we may be willing to add it to the CI VM setup, especially if it is available via apt on Unbuntu or homebrew on Mac.
-
-## Skipped ports
-
-The automated test system has a list of ports that are not tested.  We try to keep this list to a minimum because it requires additional work to test.  Ports are added to the exclusion list if they are considered "flaky" due to one of the following conditions:
-
-+ The port build will nondeterministicly fail
-+ The port conflicts with other ports
-  + Publishes files with the same name as other ports
-  + Accidently uses files from another port if installed
-
-In the case of conflicting ports we take into account popularity, number of dependants, and the chance of regression in the selection of which one is added to the skip list
-
-Ports are not added to the list if they consistently fail to build (even if the failure is "by design")
-
-The actual skip list used can be found in the pipline definition.  Here is a list of the current ports and rational:
-+ `ms-angle`
-  + Conflicts with `angle` and `qt-5base`
-+ `angle` (windows)
-  + Conflicts with `qt5-base` and `ms-angle`
-+ `tmx` (windows)
-  + Flaky on windows only due to `error PRI210: 0x80070020 - File move failed`
-+ `gherkin-c` (windows)
-  + Conflicts with `libevent`
-+ `libuuid` (osx)
-  + Causes build failures in `vxl` and `podofo`
-  + Conflicts with Darwin kernel sdk uuid.h (has missing definitions)
-+ `vxl` (windows,linux)
-  + Conflicts with latest `openjpeg` port (they ship with an old version of `openjpeg`)
-  + conflicts with qt5-location
-+ `libressl`
-  + Conflicts with `openssl`
-+ `optional-bare`
-  + conflicts with `optional-lite`
-+ `range-v3-vs2015`
-  + conflicts with `range-v3`
-+ `catch-classic`
-  + conflicts with `catch2`
-+ `libpng-apng`
-  + conflicts with `libpng`
-+ `libmariadb`
-  + conflicts with `mysql`
-+ `ogdf` (windows)
-  + conflicts with `coinutils`
-+ 'gdcm' (linux)
-  + conflicts with 3rdparty copy in 'itk'
-  
-TODO:
-theia,shogun,winpcap (windows)
-ecm
-libp7-baical
-luajit
-mozjpeg
 
 ## Links to Azure DevOps pipelines
 
 ### PR pipelines
 
-+ [vcpkg-linux-PR](https://dev.azure.com/vcpkg/public/_build?definitionId=8)
-+ [vcpkg-windows-PR](https://dev.azure.com/vcpkg/public/_build?definitionId=10)
-+ [vcpkg-osx-PR](https://dev.azure.com/vcpkg/public/_build?definitionId=12)
-
-### Post merge pipelines
-
-+ [vcpkg-linux-master-CI](https://dev.azure.com/vcpkg/public/_build?definitionId=6)
-+ [vcpkg-windows-master-CI](https://dev.azure.com/vcpkg/public/_build?definitionId=9)
-+ [vcpkg-osx-master-CI](https://dev.azure.com/vcpkg/public/_build?definitionId=11)
-
--------------------------------------------
-documentation TODO:
-+ what ports are disabled/skipped
-
++ [https://dev.azure.com/vcpkg/public/_build](https://dev.azure.com/vcpkg/public/_build)
